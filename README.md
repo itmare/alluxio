@@ -77,7 +77,79 @@ RAM은 제한적이기 때문에 worker에 있는 block은 공간이 full일때,
 
 
 
+
+<br><br><br><br>
+
+---
+# Features
+---
+
+<br>
+## Journal
++ Alluxio는 metadata operation을 위해 journal을 유지한다.
++ 가장 중요한 journal config 
+	
+	~~~
+	alluxio.master.journal.folder=[namenodeserver]:[namenodeport]/dir/
+	alluxio_journal
+	~~~
+	
++ Alluxio가 처음 구동될때, journal은 반드시 format되어야 한다.
+ 
+	~~~
+	bin/alluxio formatMaster
+	~~~ 
+	
++ Alluxio는 metadata가 이전 시점으로 되돌리기위해 journal backup을 지원한다.
+
+	~~~
+	## default backup이름: alluxio-journal-YYYY-MM-DD-timestamp.gz
+	bin/alluxio fsadmin backup
+	
+	## config for backup directory
+	alluxio.master.backup.directory=/alluxio/backups
+	~~~
+	
++  journal backup으로 부터 alluxio system을 복원하기 위해, 시스템을 restart해야하고, 재시작 시, "-i" flag와 함께 URL 추가 입력
+
+	~~~
+	bin/alluxio-stop.sh masters
+	bin/alluxio formatMaster
+	bin/alluxio-start.sh -i <backup_uri> masters
+	## ex) hdfs://[namenodeserver]:[namenodeport]/alluxio_backups/alluxio-journal-YYYY-MM-DD-timestamp.gz
+	
+	## restore 성공 log 메세지
+	INFO AlluxioMasterProcess - Restored 57 entries from backup
+	~~~
+
+
+
 <br><br>
+## Alluxio Storage
++ Alluxio는 분산버퍼캐쉬같은 역할을 하는 alluxio worker의 memory를 가지고 있는 local storage를 관리한다.
++ user configuration에 의해 각 node의 storage 크기와 타입이 정해진다.
++ Alluxio는 L1/L2 cpu cache같은 data storage 최적화를 가능하케하는 system storage media를 인식하는 tiered storage를 지원한다.
+
+### configuration
+
+
+### Eviction
+
+
+### Evictors
+
+
+### Tiered Storage(
+
+
+
+
+
+
+
+<br><br><br><br><br><br><br><br>
+
+---
 ## 정리
 + Decoupling
 	+ physical storage로 부터 app 분리 가능
