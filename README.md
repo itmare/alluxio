@@ -131,12 +131,34 @@ RAM은 제한적이기 때문에 worker에 있는 block은 공간이 full일때,
 + Alluxio는 L1/L2 cpu cache같은 data storage 최적화를 가능하케하는 system storage media를 인식하는 tiered storage를 지원한다.
 
 ### configuration
++ local filesystem에 mount관련 (under storage에 mount관련 아님)
++ conf/alluxio-site.properties 에서 alluxio storage config 설정
 
++ default memory size는 전체의 68.3% 
 
-### Eviction
+	~~~
+	ex) alluxio.worker.memory.size=16GB
+	~~~
 
++ multiple storage media 설정, 경로 설정이라고 보면 됨 (ramdisk, ssd 등)
 
-### Evictors
+	~~~
+	예) alluxio.worker.tieredstore.level0.dirs.path=/mnt/ramdisk,/mnt/ssd1,/mnt/ssd2
+	~~~
+
++ 경로설정 후, short circuit oepration을 적용하기 위해, 경로에 대한 권한을 client user에게 줘야한다. (to read, write and execute on the path) 예를들어 alluxio service를 시작한 user와 같은 그룹에 있는 user에게 770과 같은 권한을 줘야 한다.
++ storage의 사이즈를 설정한다.
+
+	~~~
+	예) alluxio.worker.tieredstore.level0.dirs.quota=16GB,100GB,100GB
+	~~~
+
++ 
+
+### Eviction (메모리에서 데이터 방출)
++ 
+
+### Evictors (
 
 
 ### Tiered Storage(
@@ -537,6 +559,10 @@ alluxio.worker.tieredstore.level0.dirs.path=/path/to/ramdisk
 ## Repair the inconsistent files or directories
 ./bin/alluxio fs checkConsistency -r /
 ~~~
+
+
+### worker의 사이즈는 동일한 것을 추천
++ 동일하지 않을시, checker에 의해 WARM 표시됨
 
 
 
