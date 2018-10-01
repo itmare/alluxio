@@ -78,100 +78,14 @@ RAM은 제한적이기 때문에 worker에 있는 block은 공간이 full일때,
 
 
 
-<br><br><br><br>
 
----
-# Features
----
 
-<br>
-## Journal
-+ Alluxio는 metadata operation을 위해 journal을 유지한다.
-+ 가장 중요한 journal config 
-	
-	~~~
-	alluxio.master.journal.folder=[namenodeserver]:[namenodeport]/dir/
-	alluxio_journal
-	~~~
-	
-+ Alluxio가 처음 구동될때, journal은 반드시 format되어야 한다.
- 
-	~~~
-	bin/alluxio formatMaster
-	~~~ 
-	
-+ Alluxio는 metadata가 이전 시점으로 되돌리기위해 journal backup을 지원한다.
 
-	~~~
-	## default backup이름: alluxio-journal-YYYY-MM-DD-timestamp.gz
-	bin/alluxio fsadmin backup
-	
-	## config for backup directory
-	alluxio.master.backup.directory=/alluxio/backups
-	~~~
-	
-+  journal backup으로 부터 alluxio system을 복원하기 위해, 시스템을 restart해야하고, 재시작 시, "-i" flag와 함께 URL 추가 입력
 
-	~~~
-	bin/alluxio-stop.sh masters
-	bin/alluxio formatMaster
-	bin/alluxio-start.sh -i <backup_uri> masters
-	## ex) hdfs://[namenodeserver]:[namenodeport]/alluxio_backups/alluxio-journal-YYYY-MM-DD-timestamp.gz
-	
-	## restore 성공 log 메세지
-	INFO AlluxioMasterProcess - Restored 57 entries from backup
-	~~~
 
 
 
 <br><br>
-## Alluxio Storage
-+ Alluxio는 분산버퍼캐쉬같은 역할을 하는 alluxio worker의 memory를 가지고 있는 local storage를 관리한다.
-+ user configuration에 의해 각 node의 storage 크기와 타입이 정해진다.
-+ Alluxio는 L1/L2 cpu cache같은 data storage 최적화를 가능하케하는 system storage media를 인식하는 tiered storage를 지원한다.
-
-### configuration
-+ local filesystem에 mount관련 (under storage에 mount관련 아님)
-+ conf/alluxio-site.properties 에서 alluxio storage config 설정
-
-+ default memory size는 전체의 68.3% 
-
-	~~~
-	ex) alluxio.worker.memory.size=16GB
-	~~~
-
-+ multiple storage media 설정, 경로 설정이라고 보면 됨 (ramdisk, ssd 등)
-
-	~~~
-	예) alluxio.worker.tieredstore.level0.dirs.path=/mnt/ramdisk,/mnt/ssd1,/mnt/ssd2
-	~~~
-
-+ 경로설정 후, short circuit oepration을 적용하기 위해, 경로에 대한 권한을 client user에게 줘야한다. (to read, write and execute on the path) 예를들어 alluxio service를 시작한 user와 같은 그룹에 있는 user에게 770과 같은 권한을 줘야 한다.
-+ storage의 사이즈를 설정한다.
-
-	~~~
-	예) alluxio.worker.tieredstore.level0.dirs.quota=16GB,100GB,100GB
-	~~~
-
-+ 
-
-### Eviction (메모리에서 데이터 방출)
-+ 
-
-### Evictors (
-
-
-### Tiered Storage(
-
-
-
-
-
-
-
-<br><br><br><br><br><br><br><br>
-
----
 ## 정리
 + Decoupling
 	+ physical storage로 부터 app 분리 가능
@@ -413,6 +327,123 @@ Alluxio 시작
 예제 결과<br>
 alluxio fs에 있는 파일 LICENSE가 NOT_PERSIST에서 PERSIST로 변경된걸 확인 할 수 있다.<br>
 ![quick-shell-example](./pictures/quick-shell-example.png)
+
+
+
+
+
+
+
+
+<br><br><br><br>
+
+---
+# Features
+---
+
+<br>
+## Journal
++ Alluxio는 metadata operation을 위해 journal을 유지한다.
++ 가장 중요한 journal config 
+	
+	~~~
+	alluxio.master.journal.folder=[namenodeserver]:[namenodeport]/dir/
+	alluxio_journal
+	~~~
+	
++ Alluxio가 처음 구동될때, journal은 반드시 format되어야 한다.
+ 
+	~~~
+	bin/alluxio formatMaster
+	~~~ 
+	
++ Alluxio는 metadata가 이전 시점으로 되돌리기위해 journal backup을 지원한다.
+
+	~~~
+	## default backup이름: alluxio-journal-YYYY-MM-DD-timestamp.gz
+	bin/alluxio fsadmin backup
+	
+	## config for backup directory
+	alluxio.master.backup.directory=/alluxio/backups
+	~~~
+	
++  journal backup으로 부터 alluxio system을 복원하기 위해, 시스템을 restart해야하고, 재시작 시, "-i" flag와 함께 URL 추가 입력
+
+	~~~
+	bin/alluxio-stop.sh masters
+	bin/alluxio formatMaster
+	bin/alluxio-start.sh -i <backup_uri> masters
+	## ex) hdfs://[namenodeserver]:[namenodeport]/alluxio_backups/alluxio-journal-YYYY-MM-DD-timestamp.gz
+	
+	## restore 성공 log 메세지
+	INFO AlluxioMasterProcess - Restored 57 entries from backup
+	~~~
+
+
+
+<br><br>
+## Alluxio Storage
++ Alluxio는 분산버퍼캐쉬같은 역할을 하는 alluxio worker의 memory를 가지고 있는 local storage를 관리한다.
++ user configuration에 의해 각 node의 storage 크기와 타입이 정해진다.
++ Alluxio는 L1/L2 cpu cache같은 data storage 최적화를 가능하케하는 system storage media를 인식하는 tiered storage를 지원한다.
+
+### configuration
++ local filesystem에 mount관련 (under storage에 mount관련 아님)
++ conf/alluxio-site.properties 에서 alluxio storage config 설정
+
++ default memory size는 전체 메모리에서 68.3% 할당
+
+	~~~
+	## if using 16 RAM and two 100 SSD
+	alluxio.worker.memory.size=16GB,100GB,100GB
+	~~~
+
++ multiple storage media 설정, 경로 설정이라고 보면 됨 (ramdisk, ssd 등)
+
+	~~~
+	alluxio.worker.tieredstore.level0.dirs.path=/mnt/ramdisk,/mnt/ssd1,/mnt/ssd2
+	~~~
+
++ 경로설정 후, short circuit oepration을 적용하기 위해, 경로에 대한 권한을 client user에게 줘야한다. (to read, write and execute on the path) 예를들어 alluxio service를 시작한 user와 같은 그룹에 있는 user에게 770과 같은 권한을 줘야 한다.
++ storage의 사이즈를 설정한다.
+
+	~~~
+	alluxio.worker.tieredstore.level0.dirs.quota=16GB,100GB,100GB
+	~~~
+
++ 기본설정은 alluxio.worker.memory.size를 따라간다.
++ 기본 Alluxio가 공급한 ramdisk 이외의 device를 사용할때, 할당량을 메모리 크기와 별도로 설정한다.
+
+### Eviction (메모리에서 데이터 방출)
++ 비동기(asynchronous:default)와 동기(synchronous) 두가지 mode 존재
++ user는 async eviction을 다루는 space reserver를 가능/불가능하게 하며 두모드를 변경 할 수 있다.
++ eviction은 주기적으로 space reserver thread에 의존하는데, worker storage 사용량이 설정된 high watermark에 도달할때까지 기다린다.
++ 그리고나서, 설정된 low watermark에 도착하면 eviction policy에 따라 data를 방출한다.
+
+~~~
+alluxio.worker.tieredstore.reserver.enabled=false
+
+# 전체 storage 사이즈: 16 + 100 + 100 = 216 GB 일때,
+alluxio.worker.tieredstore.level0.watermark.high.ratio=0.9 # 216GB * 0.9 ~ 200GB
+alluxio.worker.tieredstore.level0.watermark.low.ratio=0.75 # 216GB * 0.75 ~ 160GB
+~~~
+
+### Evictors
++ evictor는 어떤 block을 방출할지 결정하고, 유저가 eviction 과정을 설정할 수 있다.
++ evictor는 커스텀이 가능하지만, 기본적으로 4가지의 evictor로 분류
+	1. **GreedyEvictor**: 임의의 block 방출
+	2. **LRUEvictor**: LRU block 방출 
+	3. **LRFUEvictor**: LRU와 LFU에 가중치를 주고, 그에 따라 block 방출
+	4. **PartialLRUEvictor**: LRU를 기반으로 block 방출하지만, maximum free space를 가진 StorageDir를 선택하고, 그것만 방출한다.
+
+** LRU (Least Recently Used): 가장 오랫동안 사용 하지 않은 것<br>
+** LFU (Least Frequently used): 사용빈도가 가장 적은 것 
+
+### Tiered Storage 사용 
+
+
+
+
 
 
 
