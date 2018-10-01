@@ -205,6 +205,7 @@ Alluxio는 under storage와 computation framework사이에서 data reads를 위�
 + worker는 또한 copy를 로컬에 쓰며 이후 같은 data를 read할때 memory에서 local로 제공 된다.
 + Remote Cache hit은 network-speed의 data read를 제공한다.
 + Alluxio는 under storage보다 remote worker를 먼저 읽는 것을 우선순위로 한다. 왜냐면 worker와 under storage사이의 속도보다 더 빠르기 때문 
+
 ![dataflow-remote](./pictures/dataflow-remote-cache-hit.gif)
 
 ### Cache Miss
