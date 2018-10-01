@@ -476,7 +476,7 @@ alluxio.worker.tieredstore.level0.dirs.path=/path/to/ramdisk
 		./bin/alluxio copyDir <dirname>  
 	~~~
 	
-3. 노드가 통신 위해 passwordless 설정 [(링크)](http://www.linuxproblem.org/art_9.html)
+3. 노드 간 통신 위해 passwordless 설정 [(링크)](http://www.linuxproblem.org/art_9.html)
 4. alluxio 준비 / 시작
 
 	~~~
@@ -518,16 +518,6 @@ alluxio.worker.tieredstore.level0.dirs.path=/path/to/ramdisk
 
 
 
-
-
-<br><br><br><br>
-
----
-# Command Line Interface
----
-| Option | Description |
-| ------ | ----------- |
-| hello | world
 
 
 
