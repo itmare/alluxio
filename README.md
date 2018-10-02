@@ -74,18 +74,8 @@ RAM은 제한적이기 때문에 worker에 있는 block은 공간이 full일때,
 + client는 alluxio에 저장된 data를 읽고 쓰기 위해 worker와 의사소통 한다.
 + client는 native filesystem api in java를 제공하고 다양한 client language(REST, go, + python)을 서포트한다.
 + alluxio는 HDFS API와 Amazon S3 API와 호환이 되는 API를 지원한다.
-
-
-
-
-
-
-
-
-
-
-
 <br><br>
+
 ## 정리
 + Decoupling
 	+ physical storage로 부터 app 분리 가능
@@ -94,12 +84,9 @@ RAM은 제한적이기 때문에 worker에 있는 block은 공간이 full일때,
 + Speed
 	+ Alluxio는 app과 physical storage에 위치해 있고, 실제 storage에서 data를 가져오는 것처럼, in-memory에 data를 저장 할수 있고 가져올 수도 있다.
 	+ Alluxio는 메모리 뿐만 아니라 SSD 및 Disk를 위한 계층형 스토리지도 지원한다.
-
-
 ![basic-architect](./pictures/basic-architect.png)
-
 + Names
-	+ 통합 이름 지정은 실제로 디스크와 호스트를 파일 시스템에 마운트하는 것과 같은 방식으로 작동합니다.
+	+ Unified naming은 실제로 disk를 file system에 마운트하는 것과 같은 방식으로 작동한다.
 		+ alluxio://hostname:port
 		+ hdfs://hostname:port
 		+ s3n://hostname:port
@@ -153,14 +140,6 @@ Alluxio는 under storage와 computation framework사이에서 data reads를 위�
 
 ![dataflow-cache-miss](./pictures/dataflow-cache-miss.gif)
 
-## Caching
-### Partial Caching
-+ Property 설정: [alluxio.user.file.cache.partially.read.block](https://www.alluxio.org/docs/master/en/Configuration-Properties.html#alluxio.user.file.cache.partially.read.block) to false.
-![dataflow-partial-cache](./pictures/dataflow-partial-caching.gif)
-### No Caching
-+ Alluxio caching을 끄고, client가 under storage에서 직접 data를 읽는다.<br>
-	(property 설정: [alluxio.user.file.readtype.default](https://www.alluxio.org/docs/master/en/Configuration-Properties.html#alluxio.user.file.readtype.default) in the client to NO_CACHE)	
-
 ## Data Write
 Alluxio API 또는 client에 있는 property 설정([alluxio.user.file.writetype.default](https://www.alluxio.org/docs/master/en/Configuration-Properties.html#alluxio.user.file.writetype.default))을 통해 write type이 결정된다.
 ### MUST_CACHE (default)
@@ -188,12 +167,29 @@ Alluxio API 또는 client에 있는 property 설정([alluxio.user.file.writetype
 
 ![dataflow-async-through](./pictures/dataflow-async-through.gif)
 
+## Caching
+설정 config: alluxio.user.file.readtype.default=CACHE_PROMOTE(default), CACHE, NO\_CACHE  [(참고)](https://www.alluxio.org/docs/master/en/Configuration-Properties.html#alluxio.user.file.readtype.default)
 
+### default (CACHE_PROMOTE)
++ 이미 alluxio storage에 data가 있는 경우, highest tier로 data를 이동시킨다.
++ data를 under storage에서 읽어야 할 경우, local alluxio의 highest tier에 data를 쓴다.
 
+### Partial Caching (CACHE)
++ local system에서 block 읽는게 불가능 할때, client에 의해 block의 일부만 요청되도 local worker가 block을 읽고 캐쉬한다.
++ block에서 필요한 부분만 client에게 전달
++ 1.7이전버전 
+	+ partial caching이 설정되어 있으면, client가 전체 block을 동시에 읽고 캐시하므로 블록이 local worker에 완전히 캐시 될 때까지 client의 읽기 작업을 기다려야한다.
+	+ client는 읽기를 worker에게 위임하고, worker는 block의 시작부터 끝까지 읽은 후, local RAM Disk에 쓴다.
+	+ 그리고, worker는 client에 의해 요청된 block의 일부 data를 client에게 보낸다.
++ default가 on, off로 변경하려면 [alluxio.user.file.cache.partially.read.block](https://www.alluxio.org/docs/master/en/Configuration-Properties.html#alluxio.user.file.cache.partially.read.block)를 false 설정
+![dataflow-partial-cache](./pictures/dataflow-partial-caching.gif)
+
+### No Caching
++ Alluxio caching을 끄고, client가 under storage에서 직접 data를 읽는다.<br>
+	(property 설정: [alluxio.user.file.readtype.default](https://www.alluxio.org/docs/master/en/Configuration-Properties.html#alluxio.user.file.readtype.default) in the client to NO_CACHE)	
 
 
 <br><br><br><br>
-
 ---
 # Storage Unification and Abstraction
 ---
