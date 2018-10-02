@@ -184,7 +184,7 @@ Alluxio API 또는 client에 있는 property 설정([alluxio.user.file.writetype
 + default가 on, off로 변경하려면 [alluxio.user.file.cache.partially.read.block](https://www.alluxio.org/docs/master/en/Configuration-Properties.html#alluxio.user.file.cache.partially.read.block)를 false 설정
 ![dataflow-partial-cache](./pictures/dataflow-partial-caching.gif)
 
-### No Caching
+### No Caching (NO_CACHE)
 + Alluxio caching을 끄고, client가 under storage에서 직접 data를 읽는다.<br>
 	(property 설정: [alluxio.user.file.readtype.default](https://www.alluxio.org/docs/master/en/Configuration-Properties.html#alluxio.user.file.readtype.default) in the client to NO_CACHE)	
 
@@ -209,7 +209,7 @@ Alluxio API 또는 client에 있는 property 설정([alluxio.user.file.writetype
 + No ETL
 	+ Alluxio는 요구가 있을때만 존재하는 storage system으로부터 데이터를 pull한다.
 + Configuration Management
-	+ 
+	+ application과 storage들은 특별한 설정이 필요없다. Alluxio에만 접속
 + Modern, flexible architecture
 	+ alluxio unified namespace는 storage로부터 computing의 분리를 돕는다.
 	+ 이런 타입의 architecture는 최신의 데이터 처리를 위한 resource의 더 큰유연함을 가능케 한다.
@@ -239,7 +239,9 @@ Alluxio API 또는 client에 있는 property 설정([alluxio.user.file.writetype
 
 
 
-
+alluxio-site.properties
+masters
+workers
 
 
 
@@ -323,6 +325,102 @@ Alluxio 시작
 예제 결과<br>
 alluxio fs에 있는 파일 LICENSE가 NOT_PERSIST에서 PERSIST로 변경된걸 확인 할 수 있다.<br>
 ![quick-shell-example](./pictures/quick-shell-example.png)
+
+
+
+
+
+
+<br><br><br><br>
+
+---
+# Alluxio on Local Machine
+---
+### 1. Requirement
+	+  Java (JDK 8 이상)
+	+  conf/alluxio-site.properties (from conf/alluxio-site.properties.template)
+	+  conf/alluxio-site.properties 수정
+		+  alluxio.master.hostname=localhost
+		+  alluxio.underfs.address=[desired_directory]
+	+  passwordless ~/.ssh/authorized_keys   ([링크](http://www.linuxproblem.org/art_9.html))
+
+
+
+### 2. Alluxio Filesystem 포맷
++ 처음 Alluxio를 실행했을때만 필요 (존재한 Alluxio 클러스터가 있을때 실행하면 Alluxio filesystem에 있는 이전에 저장된 모든 data와 metadata가 지워진다. (Not under storage)
+
+~~~
+./bin/alluxio format
+~~~
+
+### 3. Local Alluxio Filesystem 시작
+~~~
+### root 또는 local 다음에 SudoMount 붙여서 실행해야함
+./bin/alluxio-start.sh local
+~~~
+*** 상위 command는 RAMFS설정을 위한 sudo 권한을 얻기 위해 input password가 필요, Alluxio filesystem은 in-memory data storage로써 [RAMFS](https://www.kernel.org/doc/Documentation/filesystems/ramfs-rootfs-initramfs.txt)을 사용한다. 
+
+
+
+### 4. Alluxio running 확인 및 정지
+http://localhost:19999 접속해서 확인 or logs dir확인
+
+~~~
+# 테스트
+./bin/alluxio runTests
+# 정지
+./bin/alluxio-stop.sh local
+~~~
+
+
+### 5. sudo 권한 실행
+- Linux에선 Alluxio를 시작하기 위해/mount를 실행하기위해 sudo권한이 필요, RAMFS을 in-memory data storage로 사용한다.<br>
+	(추가자료: [ramdisk vs. ramfs vs. tmpfs](http://hoyoung2.blogspot.com/2012/02/ramdisk-ramfs-tmpfs.html))
+
+- 만약 sudo 권한이 없으면, 이미 system admin으로부터 마운트된 그리고 읽기/쓰기가 가능한 user가 접근가능한 RAMFS가 필요하다. alluxio-site.properties에서 다음 conf 수정
+
+~~~
+alluxio.worker.tieredstore.level0.alias=MEM
+alluxio.worker.tieredstore.level0.dirs.path=/path/to/ramdisk
+
+## 그리고 data storage로써 위의 directory를 사용하기 위해 "NoMount" option과 함께 Alluxio 시작
+./bin/alluxio-start.sh local NoMount
+~~~
+
+
+
+
+
+
+<br><br><br><br>
+
+---
+# Alluxio on Cluster
+---
+
+1. master로 사용할 노드의 con/falluxio-site.properties 변경
+
+	~~~
+	alluxio.master.hostname=[master_node_address]
+	~~~
+
+2. conf/workers에 모든 worker노드의 ip address 또는 hostname 추가
+
+	~~~
+	## worker들의 conf 경로에 복사하기
+		./bin/alluxio copyDir <dirname>  
+	~~~
+	
+3. 노드 간 통신 위해 passwordless 설정 [(링크)](http://www.linuxproblem.org/art_9.html)
+4. alluxio 준비 / 시작
+
+	~~~
+	./bin/alluxio format
+	./bin/allxuio-start.sh <옵션1> <옵션2>
+	~~~
+	![alluxio-cluster-start](./pictures/alluxio-cluster-start.png)
+
+
 
 
 
@@ -436,103 +534,6 @@ alluxio.worker.tieredstore.level0.watermark.low.ratio=0.75 # 216GB * 0.75 ~ 160G
 ** LFU (Least Frequently used): 사용빈도가 가장 적은 것 
 
 ### Tiered Storage 사용 
-
-
-
-
-
-
-
-
-
-<br><br><br><br>
-
----
-# Alluxio on Local Machine
----
-### 1. Requirement
-	+  Java (JDK 8 이상)
-	+  conf/alluxio-site.properties (from conf/alluxio-site.properties.template)
-	+  conf/alluxio-site.properties 수정
-		+  alluxio.master.hostname=localhost
-		+  alluxio.underfs.address=[desired_directory]
-	+  passwordless ~/.ssh/authorized_keys   ([링크](http://www.linuxproblem.org/art_9.html))
-
-
-
-### 2. Alluxio Filesystem 포맷
-+ 처음 Alluxio를 실행했을때만 필요 (존재한 Alluxio 클러스터가 있을때 실행하면 Alluxio filesystem에 있는 이전에 저장된 모든 data와 metadata가 지워진다. (Not under storage)
-
-~~~
-./bin/alluxio format
-~~~
-
-### 3. Local Alluxio Filesystem 시작
-~~~
-### root 또는 local 다음에 SudoMount 붙여서 실행해야함
-./bin/alluxio-start.sh local
-~~~
-*** 상위 command는 RAMFS설정을 위한 sudo 권한을 얻기 위해 input password가 필요, Alluxio filesystem은 in-memory data storage로써 [RAMFS](https://www.kernel.org/doc/Documentation/filesystems/ramfs-rootfs-initramfs.txt)을 사용한다. 
-
-
-
-### 4. Alluxio running 확인 및 정지
-http://localhost:19999 접속해서 확인 or logs dir확인
-
-~~~
-# 테스트
-./bin/alluxio runTests
-# 정지
-./bin/alluxio-stop.sh local
-~~~
-
-
-### 5. sudo 권한 실행
-- Linux에선 Alluxio를 시작하기 위해/mount를 실행하기위해 sudo권한이 필요, RAMFS을 in-memory data storage로 사용한다.<br>
-	(추가자료: [ramdisk vs. ramfs vs. tmpfs](http://hoyoung2.blogspot.com/2012/02/ramdisk-ramfs-tmpfs.html))
-
-- 만약 sudo 권한이 없으면, 이미 system admin으로부터 마운트된 그리고 읽기/쓰기가 가능한 user가 접근가능한 RAMFS가 필요하다. alluxio-site.properties에서 다음 conf 수정
-
-~~~
-alluxio.worker.tieredstore.level0.alias=MEM
-alluxio.worker.tieredstore.level0.dirs.path=/path/to/ramdisk
-
-## 그리고 data storage로써 위의 directory를 사용하기 위해 "NoMount" option과 함께 Alluxio 시작
-./bin/alluxio-start.sh local NoMount
-~~~
-
-
-
-
-
-
-<br><br><br><br>
-
----
-# Alluxio on Cluster
----
-
-1. master로 사용할 노드의 con/falluxio-site.properties 변경
-
-	~~~
-	alluxio.master.hostname=[master_node_address]
-	~~~
-
-2. conf/workers에 모든 worker노드의 ip address 또는 hostname 추가
-
-	~~~
-	## worker들의 conf 경로에 복사하기
-		./bin/alluxio copyDir <dirname>  
-	~~~
-	
-3. 노드 간 통신 위해 passwordless 설정 [(링크)](http://www.linuxproblem.org/art_9.html)
-4. alluxio 준비 / 시작
-
-	~~~
-	./bin/alluxio format
-	./bin/allxuio-start.sh <옵션1> <옵션2>
-	~~~
-	![alluxio-cluster-start](./pictures/alluxio-cluster-start.png)
 
 
 
