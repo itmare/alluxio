@@ -1,4 +1,4 @@
-Alluxio 정리
+Alluxio 정리 중
 
 ---
 
@@ -51,20 +51,20 @@ Worker
 -	alluxio worker는 data를 block의 형태로 저장한다.
 -	worker는 local resource를 포함한 새로운 block을 만들고 읽음으로써 data를 읽고 쓰기위한 client request를 다룬다.<br> (workers serve client requests that read or write data by reading or creating new blocks within its local resources.)
 -	worker는 block안에 있는 data만을 책임진다. (file과 block의 실제 mapping은 master에만 저장 된다.)
--	Alluxio worker는 under store에서 data operation을 수행한다.
+-	Alluxio worker는 under storage에서 data operation을 수행한다.
 
 	-	중요포인트:
 
-		1.	under store로부터 읽은 data는 worker에 저장되고 다른 client의 data를 즉시 사용이 가능하다.
+		1.	under storage로부터 읽은 data는 worker에 저장되고, client는 data를 즉시 사용이 가능하다.
 		2.	client can be lightweight 그래서, under storage connector의 영향을 받지 않는다.
 
 -	간략 정리
 
-	1.	Manage local resource
-	2.	Store chunk of data
-	3.	fetch data from underlying physical storage
-	4.	respond to client request
-	5.	report heartbeat to the master
+	1.	해당 local resource 관리
+	2.	data를 저장
+	3.	under storage에서 data 가져옴
+	4.	client의 요청에 응답
+	5.	master에게 heartbeat를 주기적으로 리포트
 
 RAM은 제한적이기 때문에 worker에 있는 block은 공간이 full일때, 방출된다. worker는 eviction policies(방출정책)에 따라 Alluxio space를 유지한다.
 
@@ -86,14 +86,14 @@ Client
 정리
 ----
 
--	Decoupling
+-	**Decoupling**
 	-	physical storage로 부터 app 분리 가능
 	-	app은 alluxio와의 연결만 있으면 되고, 자동으로 alluxio로 부터 지원되는 physical storage를 지원한다.
 	-	Alluxio가 다양한 인터페이스를 제공함(HDFS, key/value, file system interface)으로 간단하게 통합할 수 있다.
--	Speed
+-	**Speed**
 	-	Alluxio는 app과 physical storage에 위치해 있고, 실제 storage에서 data를 가져오는 것처럼, in-memory에 data를 저장 할수 있고 가져올 수도 있다.
 	-	Alluxio는 메모리 뿐만 아니라 SSD 및 Disk를 위한 계층형 스토리지도 지원한다. ![basic-architect](./pictures/basic-architect.png)
--	Names
+-	**Names**
 	-	Unified naming은 실제로 disk를 file system에 마운트하는 것과 같은 방식으로 작동한다.
 		-	alluxio://hostname:port
 		-	hdfs://hostname:port
@@ -119,19 +119,21 @@ Alluxio는 under storage와 computation framework사이에서 data reads를 위�
 
 ### Local Cache Hit
 
+-	**data의 위치가 worker의 위치와 같을때**
 -	requested data가 local Alluxio worker에 있을때 일어난다. (computation은 local cache hit을 얻는다.)
--	application이 Alluxio client를 통해 data access 요청할때, client는 Alluxio master와 함께 data의 worker 위치를 체크한다.
--	만약, data available in local, Alluxio client는 Alluxio worker를 통과하기 위해 short-circuit read를 사용하고, local filesystem에서 직접 file을 읽는다.
+-	application이 Alluxio client를 통해 data access 요청할때, client는 Alluxio master와 함께 data가 있는 worker 위치를 체크한다.
+-	data가 local에 위치한다면, Alluxio client는 Alluxio worker를 지나치기 위해 short-circuit read를 사용하고, local filesystem(RAM)에서 직접 file을 읽는다.
 -	short-circuit read는 TCP소켓을 통한 data transfer를 회피하고, memory speed의 data access를 제공한다.
 -	Short-circuit는 Alluxio에서 data를 읽기 위한 가장 효과적인 방법이다.
 -	기본적으로, short-circuit read는 허용된 permission을 요구하는 local filesystem operation을 사용한다.
 -	때때로, worker와 client가 dockerize될때 불가능하다. (부정확한 resource acccounting 때문)
--	short circuit이 불가능할때, Alluxio는 worker가 미리 디자인된 domain socket path를 통해 data를 client에게 전달하기위해 short circuit에 위치한 domain socket을 제공한다.<br>[Running Alluxio on Docker.](https://github.com/nodeca/babelfish/)
+-	short circuit이 불가능할때, Alluxio는 worker가 미리 디자인된 domain socket path를 통 data를 client에게 전달하기위해 short circuit에 위치한 domain socket을 제공한다.<br>[Running Alluxio on Docker.](https://github.com/nodeca/babelfish/)
 
 ![dataflow-local](./pictures/dataflow-local-cache-hit.gif)￼
 
 ### Remote Cache Hit
 
+-	**data의 위치가 local worker에 없고, 다른 worker에 있을때**
 -	data가 local Alluxio worker에서 없고 cluster상에서 다른 Alluxio worker에 위치한다면, Alluxio client는 다른 머신의 worker로 부터 data를 읽는다.
 -	client는 master에서 확인하고, remote worker로 부터 data가 가능한지를 찾는다.
 -	local worker는 remote worker로부터 data를 읽고, client에게 data를 넘긴다.
@@ -209,7 +211,7 @@ Caching
 
 -	Alluxio caching을 끄고, client가 under storage에서 직접 data를 읽는다.<br> (property 설정: [alluxio.user.file.readtype.default](https://www.alluxio.org/docs/master/en/Configuration-Properties.html#alluxio.user.file.readtype.default) in the client to NO_CACHE)  
 
-<br><br><br><br>
+<br><br><br><br><br>
 
 ---
 
@@ -244,7 +246,7 @@ Storage Unification and Abstraction
 -	Performance
 	-	local caching과 eviction strategy는 중요하고 자주사용되는 data에 빠른 local access를 제공한다. (w/o permanent copies of data)
 
-<br><br><br><br>
+<br><br><br><br><br>
 
 ---
 
@@ -259,60 +261,655 @@ Remote Data Acceleration
 
 ![org-data-acceleration](./pictures/org-data-acceleration.png)
 
+<br><br><br><br><br>
+
+---
+
+Quick Start
+===========
+
+---
+
+### 1. Alluxio 다운로드
+
+www.alluxio.org/download<br> 본인이 원하는 alluxio 버전과 빌트인 hadoop 선택 후 다운로드<br> ![download-alluxio](./pictures/download-alluxio.png)
+
+```shell
+# 직접 다운로드
+wget http://alluxio.org/downloads/files/{{site.ALLUXIO_RELEASED_VERSION}}/alluxio-{{site.ALLUXIO_RELEASED_VERSION}}-bin.tar.gz
+
+# ex)
+http://downloads.alluxio.org/downloads/files/1.8.1/alluxio-1.8.1-hadoop-2.9-bin.tar.gz
+```
+
+### 2. Alluxio Config 수정
+
+기본 configuration 수정 (로컬 환경이므로 hostname을 localhost로 정의)
+
+```shell
+alluxio.master.hostname=localhost
+```
+
+### 3. Alluxio 환경 검증
+
+환경에 따라 선택 실행
+
+```shell
+# for local
+./bin/alluxio validateEnv local
+
+# for cluster
+./bin/alluxio validateEnv all   
+
+# 특정 validation만 실행
+./bin/alluxio validateEnv local ulimit
+```
+
+![local-validate-env](./pictures/local-validate-env.png)
+
+### 4. Alluxio 시작
+
+master와 worker를 시작 준비를 위해 journal, worker storage directory 포맷<br>
+
+```shell
+./bin/alluxio format
+```
+
+Alluxio 시작
+
+```shell
+./bin/alluxio-start.sh local SudoMount
+```
+
+### 5. Alluxio shell 사용하기
+
+\([command line 리스트](https://www.alluxio.org/docs/1.8/en/Command-Line-Interface.html) )
+
+```shell
+# Alluxio file system 기본 명령어
+./bin/alluxio fs [option]
+
+예제)
+# 로컬에 있는 LICENSE 파일을 alluxio로 복사
+./bin/alluxio fs copyFromLocal LICENSE /LICENSE
+
+# alluxio의 해당 디렉토리 파일 리스트업
+./bin/alluxio fs ls /
+
+# alluxio에 있는 파일을 Under Storage에 저장
+./bin/alluxio fs persist /LICENSE
+```
+
+예제 결과<br> alluxio fs에 있는 파일 LICENSE가 NOT_PERSIST에서 PERSIST로 변경된걸 확인 할 수 있다.<br> ![quick-shell-example](./pictures/quick-shell-example.png)
+
+<br><br><br><br><br>
+
+---
+
+Alluxio on Local Machine
+========================
+
+---
+
+### 1. Requirement
+
+-	Java (JDK 8 이상)
+-	conf/alluxio-site.properties (from conf/alluxio-site.properties.template)
+-	conf/alluxio-site.properties 수정`shell
+	alluxio.master.hostname=localhost
+	alluxio.underfs.address=[desired_directory]
+	`
+-	passwordless ~/.ssh/authorized_keys ([링크](http://www.linuxproblem.org/art_9.html)\)
+
+### 2. Alluxio Filesystem 포맷
+
+-	처음 Alluxio를 실행했을때만 필요 (존재한 Alluxio 클러스터가 있을때 실행하면 Alluxio filesystem에 있는 이전에 저장된 모든 data와 metadata가 지워진다. (Not under storage)
+
+```shell
+./bin/alluxio format
+```
+
+### 3. Local Alluxio Filesystem 시작
+
+```shell
+# root 또는 local 다음에 SudoMount 붙여서 실행해야함
+./bin/alluxio-start.sh local
+```
+
+\*\** 상위 command는 RAMFS설정을 위한 sudo 권한을 얻기 위해 input password가 필요, Alluxio filesystem은 in-memory data storage로써 [RAMFS](https://www.kernel.org/doc/Documentation/filesystems/ramfs-rootfs-initramfs.txt)을 사용한다.
+
+### 4. Alluxio running 확인 및 정지
+
+http://localhost:19999 접속해서 확인 or logs dir확인
+
+```shell
+# 테스트
+./bin/alluxio runTests
+# 정지
+./bin/alluxio-stop.sh local
+```
+
+### 5. sudo 권한 실행
+
+-	Linux에선 Alluxio를 시작하기 위해/mount를 실행하기위해 sudo권한이 필요, RAMFS을 in-memory data storage로 사용한다.<br> (추가자료: [ramdisk vs. ramfs vs. tmpfs](http://hoyoung2.blogspot.com/2012/02/ramdisk-ramfs-tmpfs.html)\)
+
+-	만약 sudo 권한이 없으면, 이미 system admin으로부터 마운트된 그리고 읽기/쓰기가 가능한 user가 접근가능한 RAMFS가 필요하다. alluxio-site.properties에서 다음 conf 수정
+
+```shell
+alluxio.worker.tieredstore.level0.alias=MEM
+alluxio.worker.tieredstore.level0.dirs.path=/path/to/ramdisk
+
+# data storage로써 위의 directory를 사용하기 위해 "NoMount" option과 함께 Alluxio 시작
+./bin/alluxio-start.sh local NoMount
+```
+
 <br><br><br><br>
 
 ---
 
-Features
-========
+Alluxio on Cluster
+==================
 
 ---
 
+1.	master로 사용할 노드의 con/falluxio-site.properties 변경
+
+	```shell
+	alluxio.master.hostname=[master_node_address]
+	```
+
+2.	conf/workers에 모든 worker노드의 ip address 또는 hostname 추가
+
+	```shell
+	# worker들의 conf 경로에 복사하기
+	    ./bin/alluxio copyDir <dirname>  
+	```
+
+3.	노드 간 통신 위해 passwordless 설정 [(링크)](http://www.linuxproblem.org/art_9.html)
+
+4.	alluxio 준비 / 시작
+
+	```shell
+	./bin/alluxio format
+	./bin/allxuio-start.sh <옵션1> <옵션2>
+	```
+
+	![alluxio-cluster-start](./pictures/alluxio-cluster-start.png)
+
+<br><br><br><br><br>
+
+---
+
+Under Stores (Storage Layer)
+============================
+
+---
+
+Alluxio with HDFS
+-----------------
+
+### 1. Initial Setup
+
+-	Alluxio Cluster를 특정 머신에서 실행하려면, Alluxio server binary를 각 머신에 배포해야한다. - [precompiled binary가 포함된 alluxio](http://www.alluxio.org/download) (wget 사용해서 precompile된 alluxio 사용) - [alluxio source code로 부터 binary를 compile](https://www.alluxio.org/docs/1.8/en/Building-Alluxio-From-Source.html)
+
+### 2. Configuring Alluxio
+
+-	Basic Configuration
+
+```shell
+alluxio.underfs.address=hdfs://<NAMENODE>:<PORT>
+ex) alluxio가 설치된 곳에 hdfs namenode를 셋팅할때,
+alluxio.underfs.address=hdfs://localhost:9000
+```
+
+-	HDFS namenode HA mode - 적절한 config파일과 함께 HDFS에 접근 하기 위해 Alluxio server config를 설정해야한다.
+
+```shell
+alluxio.underfs.hdfs.configuration=/path/to/hdfs/conf/core-site.xml:/path/to/hdfs/conf/hdfs-site.xml
+```
+
+-	User/Permission Mapping - user를 포함하는 file/directory의 permission 정보를 위해, group과 HDFS mode는 Alluxio와 일치해야 한다. (Alluxio의 foo유저가 만든 파일은 foo유저 owner로써 HDFS에 persist된다.)
+-	Alluxio의 master와 worker process를 시작한 유저는 다음의 둘 중 하나가 필요
+
+	1.	[HDFS super user](http://hadoop.apache.org/docs/r2.7.2/hadoop-project-dist/hadoop-hdfs/HdfsPermissionsGuide.html#The_Super-User). 즉, Alluxio와 hdfs를 시작할때 사용한 유저명이 같아야함 (like hdfs)
+	2.	[HDFS superuser group](http://hadoop.apache.org/docs/r2.7.2/hadoop-project-dist/hadoop-hdfs/HdfsPermissionsGuide.html#Configuration_Parameters)의 맴버. `hdfs-site.xml`을 수정하고 `dfs.permissions.superusergroup`의 값을 확인. 만약에 저 property의 group이 hdfs로 설정되어 있으면, alluxio process를 시작한 유저를 hdfs group에 추가한다.
+
+	```shell
+	ex)
+	# alluxio가 root계정일때 hdfs 전체에 접근 권한 부여
+	hadoop fs -chown root /
+	```
+
+### 3. Running Alluxio Locally with HDFS
+
+```shell
+# under storage로 사용될 hdfs의 alluxio 위치의 권한 변경
+# 이유: allxuio에서 hdfs에 접속할때 root계정으로 실행해서 에러 발생,
+hadoop fs chmod 777 /alluxio/data
+
+# alluxio master node conf/alluxio-site.properties에서
+# under storage 경로 hdfs로 변경 (8020 또는 9000)
+# ex)
+alluxio.underfs.address=hdfs://bda02.skcc.com:8020/alluxio/data
+```
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+<br><br><br><br><br>
+
+---
+
+Data Application (Computation Layer)
+====================================
+
+---
+
+Running Spark on Alluxio
+------------------------
+
+### 1. Overview
+
+-	Spark 1.1 이상 alluxio cluster와 hdfs에 접근 가능
+
+### 2. Prerequisties
+
+-	java 8 update 60 or higher, 64bit - alluxio-site.properties의 예를들어`alluxio.underfs.address= hdfs://<address>/alluxio` 이런식으로 설정 필요 - alluxio client jar 확인 (/<alluxio_path>/client/alluxio-1.8.1-client.jar)
+
+### 3. Basic Setup
+
+-	spark driver가 있거나 executor가 작동하는 모든 노드에 client jar를 보냄, 모든 노드에 local path와 같게 client jar를 넣는다.  
+-	spark/conf/spark-defaults.conf에 다음을 추가
+
+`shell
+    spark.driver.extraClassPath /<PATH_TO_ALLUXIO>/client/alluxio-1.8.1-client.jar
+    spark.executor.extraClassPath /<PATH_TO_ALLUXIO>/client/alluxio-1.8.1-client.jar
+`
+
+### 4. Example: Use alluxio as Input and Output
+
+#### 4.1. Access Data Only in Alluxio
+
+-	로컬데이터를 alluxio fs로 복사, LICENSE파일을 복사해보자
+
+```shell
+cd <alluxio_path>
+bin/alluxio fs copyFromLocal LICENSE /Input
+```
+
+-	spark-shell 실행하자, alluxio master 주소를 입력
+
+```scala
+> val s = sc.textFile("alluxio://<alluxio_master_addr>:19998/Input")
+> val double = s.map(line => line + line)
+> double.saveAsTextFile("alluxio://<alluxio_master_address>:19998/Output")
+```
+
+-	http://<alluxio_master_addr>:19999/browse에 들어가서 확인가능, /Output 경로가 생기고, 그안에 두개의 Input 경로에 있던 파일이 더블업되어 있을 것이다.
+
+#### 4.2. Access Data in Under storage
+
+-	under storage로부터 데이터 가져오기 - 임의의 Input_HDFS파일을 HDFS넣기 (파일이 alluxio에는 없고, HDFS에 있는 환경 만들기)
+
+`shell
+    hdfs dfs -put LICENSE /alluxio/data/Input_HDFS
+`
+
+-	현재 alluxio에는 Input_HDFS파일이 적재되어 있진 않지만, under storage에는 persist되어있다. ![data-from-understorage1](./pictures/data-from-understorage1.png)
+
+-	spark-shell에서 다음을 실행
+
+`scala
+    > val s = sc.textFile("alluxio://<alluxio_master_address>:19998/Input_HDFS")
+    > val double = s.map(line => line + line)
+    > double.saveAsTextFile("alluxio://<alluxio_master_address>:19998/Output_HDFS")
+`
+
+-	alluxio에 Output_HDFS 경로 생기고, Input_HDFS파일 내용의 두개파일이 포함된다.
+
+-	Input_HDFS파일은 In-Alluxio에 적재된걸 확인 할 수 있다. ![data-from-understorage2](./pictures/data-from-understorage2.png)
+
+<br><br><br><br><br>
+
+---
+
+Basic
+=====
+
+---
+
+Configuration Settings
+----------------------
+
+### 1. Configure Applications
+
+#### 1.1. Alluxio Shell Commands
+
+-	fs command다음에 `-Dproperty=value` 사용 가능
+-	example (파일을 alluxio로 복사할때, write type을 CACHE_THROUGH로 설정)
+
+	```
+	$ bin/alluxio fs -Dalluxio.user.file.writetype.default=CACHE_THROUGH copyFromLocal README.md /README.md
+	```
+
+#### 1.2. Spark
+
+-	[참고](https://www.alluxio.org/docs/1.8/en/compute/Spark.html#customize-alluxio-user-properties-for-all-spark-jobs)
+
+#### 1.3. hadoop MapReduce
+
+-	[참고](https://www.alluxio.org/docs/1.8/en/compute/Hadoop-MapReduce.html#customize-alluxio-user-properties-for-all-mapreduce-jobs)
+
+#### 1.4. hive
+
+-	[참고](https://www.alluxio.org/docs/1.8/en/compute/Hive.html#customize-alluxio-user-properties)
+
+#### 1.5. Presto
+
+-	[참고](https://www.alluxio.org/docs/1.8/en/compute/Presto.html#customize-alluxio-user-properties)
+
 <br>
 
-Journal
--------
+### 2. Configure Alluxio Cluster
+
+#### 2.1. Use Site-Property Files
+
+-	alluxio-site.properties사용하여 설정하는 것을 권장
+-	클러스터 시작하기전, 클러스터에 있는 모든 master와 worker에 배포
+-	파일 업데이트 시, 클러스터 재시작해야 적용
+
+#### 2.2. Use Environment
+
+-	[자주 쓰는 환경변수 테이블 참고](https://www.alluxio.org/docs/1.8/en/basic/Configuration-Settings.html#use-environment-variables)
+
+-	conf/alluxio-env.sh를 활용해도 된다.
+
+#### 2.3. Specify Cluster-Wide Defaults
+
+-	1.8버전부터, client와 worker는 master로 부터 가져온 cluster-wide configuration값들을 가지고 client와 worker의 configuration을 설정할 수 있다.
+-	모든 client와 worker가 master에 연결할때, master의 alluxio-site.properties파일을 기반으로하는 default config값들이 초기설정된다.
+-	cluster admin은 모든 master에 있는 다음을 설정할 수 있다.
+	-	client-side setting(e.g. alluxio.user.\*\)
+	-	network transport settings(e.g. alluxio.security.authentication.type)
+	-	worker setting(e.g. alluxio.worker.\*\)
+-	설정된 값들은 client와 worker가 연결될 때 클러스터 전체의 default value가 된다.
+
+<br>
+
+### 3. Configuration Sources
+
+-	설정이 따로 없으면 [default property value](https://www.alluxio.org/docs/1.8/en/reference/Properties-List.html)에 alluxio가 작동된다.
+-	`bin/alluxio getConf <option> <conf_name>` 를 통해 현재 세팅 확인가능
+-	conf_name 안쓰면 전체 리스트 출력
+-	`--source`: conf의 default여부 확인 가능
+-	`--master`: cluster의 모든 config를 리스트한다.
+-	example
+
+	```shell
+	$ bin/alluxio getConf --master --source
+	alluxio.conf.dir=/Users/bob/alluxio/conf (SYSTEM_PROPERTY)
+	alluxio.debug=false (DEFAULT)
+	...
+	```
+
+#### 3.1. [JVM system properties 설정](https://docs.oracle.com/javase/jndi/tutorial/beyond/env/source.html#SYS)
+
+-	JVM system properties -Dproperty=value를 통해 Application config 적용
+-	예시
+
+	```shell
+	# Alluxio Shell Command
+	$ bin/alluxio fs -Dalluxio.user.file.writetype.default=CACHE_THROUGH copyFromLocal README.md /README.md
+	# Spark Jobs
+	$ spark-submit \
+	--conf 'spark.driver.extraJavaOptions=-Dalluxio.user.file.writetype.default=CACHE_THROUGH' \
+	--conf 'spark.executor.extraJavaOptions=-Dalluxio.user.file.writetype.default=CACHE_THROUGH' ...
+	# Hadoop MapReduce Jobs
+	$ bin/hadoop jar libexec/share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.3.jar wordcount \
+	-Dalluxio.user.file.writetype.default=CACHE_THROUGH \
+	-libjars /<PATH_TO_ALLUXIO>/client/alluxio-1.8.1-client.jar \
+	<INPUT FILES> <OUTPUT DIRECTORY>
+	```
+
+#### 3.2. [Environment variables 설정](https://www.alluxio.org/docs/1.8/en/basic/Configuration-Settings.html#use-environment-variables)
+
+#### 3.3. [propertiey file 설정](https://www.alluxio.org/docs/1.8/en/basic/Configuration-Settings.html#use-site-property-files-recommended)
+
+-	alluxio-site.properties 사용설정 변경 후, 적용
+-	설치방법에 따라 **\${ALLUXIO_HOME}/conf**, **\${HOME}/.alluxio/**, **/etc/alluxio/** 에 위치
+
+#### 3.4. [Cluster default values](https://www.alluxio.org/docs/1.8/en/basic/Configuration-Settings.html#specify-cluster-wide-defaults)
+
+-	alluxio client는 기본적으로 master의 configuration을 기반으로 작동한다.
+
+<br>
+
+### 4. Server Configuration Checker
+
+-	3가지 방법을 통해 configuration error와 warning을 확인 가능
+-	web UI ![screenshot_configuration_checker_webui](./pictures/screenshot_configuration_checker_webui.png)
+-	docker CLI
+
+	```shell
+	bin/alluxio fsadmin doctor configuration
+	```
+
+-	master logs ![screenshot_configuration_checker_masterlogs](./pictures/screenshot_configuration_checker_masterlogs.png)
+
+<br><br><br>
+
+Web Interface
+-------------
+
+-	web UI를 통해 user에게 cluster의 모니터와 관리를 제공한다.
+-	Master web Interface: http://<master_ip>:19999
+-	Worker web Interface: http://<worker_ip>:30000
+
+<br><br><br><br><br>
+
+---
+
+Operations
+==========
+
+---
+
+Admin CLI
+---------
+
+-	Alluxio filesystem을 관리하기 위한 admin command 제공
+-	./bin/alluxio **fsadmin**
+
+```shell
+./bin/alluxio fsadmin [generic options]
+       [backup]
+       [doctor]
+       [report]
+       [ufs --mode <noAccess/readOnly/readWrite> <ufsPath>]
+       ...
+```
+
+### 1. backup command
+
+-	alluxio metadata를 백업한다.
+-	alluxio.master.backup.directory에서 백업 경로 저장 변경 가능
+
+```shell
+ex)
+# default 경로에 저장 (under storage의 /alluxio_backups 에 저장)
+./bin/alluxio fsadmin backup
+# 특정 경로에 저장
+./bin/alluxio fsadmin backup /alluxio/special_backups
+# local에 저장
+./bin/allxuio fsadmin backup /path/to/local/alluxio_backup/  --local
+```
+
+<br>
+
+### 2. doctor command
+
+-	alluxio의 에러와 경고를 보여준다.
+
+```shell
+./bin/alluxio fsadmin doctor configuration
+```
+
+<br>
+
+### 3. report command
+
+-	alluxio 동작 cluster정보를 제공한다.
+
+```shell
+./bin/alluxio fsadmin report
+```
+
+#### capacity option
+
+-	report capacity는 worker에 대한 capacity 정보를 보여준다.
+	-	-live : live workers
+	-	-lost : lost workers
+	-	-workers <worker_names> : 특정한 worker, hostname, ip를 ","로 구분
+
+```shell
+# 모든 worker의 용량 정보 확인
+./bin/alluxio fsadmin report capacity
+# 살아있는 worker의 용량 정보 확인
+./bin/alluxio fsadmin report capacity -live
+# 특정 worker의 용량 정보 확인
+./bin/alluxio fsadmin report capacity -workers 127.0.0.1,hello.skcc.com
+```
+
+#### metrics option
+
+```shell
+# metric정보를 수치로 보여준다.
+./bin/alluxio fsadmin report metrics
+```
+
+#### ufs option
+
+```shell
+# mount된 모든 under storage 정보를 보여준다.
+./bin/alluxio fsadmin report metrics
+```
+
+<br>
+
+### 4. ufs command
+
+-	마운트된 under storage의 attribute를 업데이트 할 수 있다.
+-	mode옵션을 변경함으로써 under storage에 접근권한을 변경할 수 있다.
+	-	종류: noAccess, readOnly, readWrite
+
+```shell
+./bin/alluxio fsadmin ufs --mode readOnly hdfs://ns
+```
+
+<br><br><br><br><br>
+
+Journal Management
+------------------
+
+### 1. Configuration
 
 -	Alluxio는 metadata operation을 위해 journal을 유지한다.
 -	가장 중요한 journal config
 
-	```shell
-	alluxio.master.journal.folder=[namenodeserver]:[namenodeport]/dir/
-	alluxio_journal
-	```
+```shell
+alluxio.master.journal.folder=[namenodeserver]:[namenodeport]/dir/
+alluxio_journal
+```
+
+### 2. Formatting the journal
 
 -	Alluxio가 처음 구동될때, journal은 반드시 format되어야 한다.
 
-	```shell
-	bin/alluxio formatMaster
-	```
+```shell
+bin/alluxio formatMaster
+```
+
+### 3. Operations
+
+#### 3.1. Manually backing up the journal
 
 -	Alluxio는 metadata가 이전 시점으로 되돌리기위해 journal backup을 지원한다.
 
-	```shell
-	# default backup이름: alluxio-journal-YYYY-MM-DD-timestamp.gz
-	bin/alluxio fsadmin backup
+```shell
+# default backup이름: alluxio-journal-YYYY-MM-DD-timestamp.gz bin/alluxio fsadmin backup
+# config for backup directory
+alluxio.master.backup.directory=/alluxio/backups
+```
 
-	# config for backup directory
-	alluxio.master.backup.directory=/alluxio/backups
-	```
+#### 3.2. Restoring from a backup
 
 -	journal backup으로 부터 alluxio system을 복원하기 위해, 시스템을 restart해야하고, 재시작 시, "-i" flag와 함께 URL 추가 입력
 
-	```shell
-	bin/alluxio-stop.sh masters
-	bin/alluxio formatMaster
-	bin/alluxio-start.sh -i <backup_uri> masters
-	# ex) hdfs://[namenodeserver]:[namenodeport]/alluxio_backups/alluxio-journal-YYYY-MM-DD-timestamp.gz
+```shell
+bin/alluxio-stop.sh masters bin/alluxio formatMaster bin/alluxio-start.sh -i <backup_uri> masters
+# ex) hdfs://[namenodeserver]:[namenodeport]/alluxio_backups/alluxio-journal-YYYY-MM-DD-timestamp.gz
 
-	# restore 성공 log 메세지
-	INFO AlluxioMasterProcess - Restored 57 entries from backup
-	```
+# restore 성공 log 메세지
+INFO AlluxioMasterProcess - Restored 57 entries from backup
+```
 
-<br><br><br><br>
+<br><br><br><br><br>
 
-Alluxio Storage
----------------
+Metrics System
+--------------
+
+-	alluxio에는 두가지 타입의 metric이 있다. (cluster-wide aggregated metrics, per process detailed metrics)
+
+	1.	Cluster Metrics
+
+		-	master에 의해 수집된다.
+		-	web UI의 metrics tab에서 확인 가능하다.
+		-	cluster상태의 snapshot, 전체 data양, alluxio의 metadata를 제공한다.
+		-	client와 worker는 application id가 포함된 master에게 metrics data를 보낸다.
+		-	기본적으로, 'app-[random\_number]' 형식에 포함되어 있다. 이 값은 'alluxio.user.app.id' property를 통해 설정되고 multiple process들이 logical application에 결합된다.
+
+	2.	Process Metrics
+
+		-	각 alluxio process로써 수집되고, configured sinks를 통해 machine readable format으로 표시된다.
+		-	Process metrics은 third-party monitoring tool로 사용된다.
+		-	hostname:port/metrics/json 에서 확인 가능
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+<br><br><br><br><br>
+
+---
+
+Advanced
+========
+
+---
+
+Alluxio Storage Management
+--------------------------
 
 -	Alluxio는 분산버퍼캐쉬같은 역할을 하는 alluxio worker의 memory를 가지고 있는 local storage를 관리한다.
 -	user configuration에 의해 각 node의 storage 크기와 타입이 정해진다.
@@ -424,49 +1021,9 @@ alluxio.worker.tieredstore.level1.watermark.low.ratio=0.7   # 두번째 tier에�
 -	tier를 만드는 수는 제한이없지만 보통 3개의 tier로 설정 (mem, hdd, ssd)
 -	많아야 하나의 tier가 특정한 alias를 참조할 수 있다. 예를들어 많아야 하나의 tier가 alias hdd를 가진다. 만약 HDD tier를 위해 다양한 하드드라이브를 alluxio에 사용한다면, 여러 path를 사용할 수있게 설정 해야 한다. (alluxio.worker.tieredstore.level{x}.dirs.path 변경)
 
-참고: [Configuration Parameters For Tiered Storage](https://www.alluxio.org/docs/1.8/en/Alluxio-Storage.html#configuration-parameters-for-tiered-storage)<br><br><br><br>
+참고: [Configuration Parameters For Tiered Storage](https://www.alluxio.org/docs/1.8/en/basic/Configuration-Settings.html)
 
-<br><br><br><br>
-
-Configuration Settings
-----------------------
-
-#### JVM system properties -Dproperty=value를 통해 Application config 적용
-
--	예시
-
-	```shell
-	# Alluxio Shell Command
-	$ bin/alluxio fs -Dalluxio.user.file.writetype.default=CACHE_THROUGH copyFromLocal README.md /README.md
-	# Spark Jobs
-	$ spark-submit \
-	--conf 'spark.driver.extraJavaOptions=-Dalluxio.user.file.writetype.default=CACHE_THROUGH' \
-	--conf 'spark.executor.extraJavaOptions=-Dalluxio.user.file.writetype.default=CACHE_THROUGH' ...
-	# Hadoop MapReduce Jobs
-	$ bin/hadoop jar libexec/share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.3.jar wordcount \
-	-Dalluxio.user.file.writetype.default=CACHE_THROUGH \
-	-libjars /<PATH_TO_ALLUXIO>/client/alluxio-1.8.1-client.jar \
-	<INPUT FILES> <OUTPUT DIRECTORY>
-
-
-	```
-
-#### Alluxio Cluster 설정
-
--	conf/alluxio-site.properties 사용설정 변경 후, alluxio 재시작 ([참고](https://www.alluxio.org/docs/1.8/en/Configuration-Settings.html)\)
-
-#### Server Configuration Checker
-
--	3가지 방법을 통해 configuration error와 warning을 확인 가능 1. web UI ![screenshot_configuration_checker_webui](./pictures/screenshot_configuration_checker_webui.png)
--	docker CLI
-
-	```shell
-	bin/alluxio fsadmin doctor configuration
-	```
-
--	master logs ![screenshot_configuration_checker_masterlogs](./pictures/screenshot_configuration_checker_masterlogs.png)
-
-<br><br><br><br>
+<br><br><br><br><br>
 
 Security
 --------
@@ -586,7 +1143,7 @@ alluxio.master.audit.logging.enabled=true
 
 -	HDFS audit log의 포맷과 비슷하다 ([wiki](https://wiki.apache.org/hadoop/HowToConfigure)\)
 
-<br><br><br><br>
+<br><br><br><br><br>
 
 Tiered Locality
 ---------------
@@ -644,84 +1201,9 @@ alluxio.locality.order=node,rack,availability_zone
 -	**반드시** 모든 entity에 대해 설정되어야 한다. (master, worker, client)
 -	각 entity에 availability zone을 설정할때, alluxio.locality.availability\_zone 설정하거나, output에 availability\_zone\=...을 포함하는 locality script 사용해야 한다.
 
-<br><br><br><br>
-
-Metrics System
---------------
-
--	alluxio에는 두가지 타입의 metric이 있다. (cluster-wide aggregated metrics, per process detailed metrics)
-
-	1.	Cluster Metrics
-
-		-	master에 의해 수집된다.
-		-	web UI의 metrics tab에서 확인 가능하다.
-		-	cluster상태의 snapshot, 전체 data양, alluxio의 metadata를 제공한다.
-		-	client와 worker는 application id가 포함된 master에게 metrics data를 보낸다.
-		-	기본적으로, 'app-[random\_number]' 형식에 포함되어 있다. 이 값은 'alluxio.user.app.id' property를 통해 설정되고 multiple process들이 logical application에 결합된다.
-
-	2.	Process Metrics
-
-		-	각 alluxio process로써 수집되고, configured sinks를 통해 machine readable format으로 표시된다.
-		-	Process metrics은 third-party monitoring tool로 사용된다.
-		-	hostname:port/metrics/json 에서 확인 가능
-
-<br><br><br><br>
-
-Remote Logging
---------------
-
-<br><br><br><br>
-
-Unified Namespace
------------------
-
-<br><br><br><br>
-
-Web Interface
--------------
-
-<br><br><br><br>
-
-Alluxio-FUSE
-------------
-
--	FUSE(Filesystem in Userspace)는 Linux kernel로 filesystem을 내보내는 userspace program을 위한 interface이다.
--	FUSE project는 두개의 요소로 구성
-	1.	*fuse* kernel module (일반 kernel repo에 유지 관리됨)
-	2.	*libfuse* userspace library ()
--	distributed Alluxio File System을 Unix 대부분의 표준 file system처럼 마운트 할 수있게 해주는 feature
--	이 기능을 사용하면, 표준 bash tool(ex: ls, cat, mkdir..)은 distributed alluxio data store에 기본 access를 가진다.
--	Application이 어떤 language(like C, C++, Python, Ruby, Perl, Java etc)로 쓰여졌던간 FUSE를 사용하면 표준 POSIX API를 사용함으로써 Alluxio와 통신할 수 있다. (alluxio client 통합 및 설정은 필요하지 않다.)
-
-<br><br><br>
-
--	requirements
-	-	JDK 1.8 or newer
-	-	libfuse 2.9.3 or newer (for linux)
-	-	python 3.5 or newer
--	installing FUSE
-
-	-	fuse 다운로드:
-
-	```shell
-	wget https://github.com/libfuse/libfuse/archive/fuse-3.2.6.tar.gz
-	```
-
-	-	pip3 install meson
-	-	pip3 install ninja
-
 .
 
 .
-
-.
-
-.
-
-<br><br><br><br>
-
-Time to Live
-------------
 
 .
 
@@ -736,269 +1218,18 @@ Time to Live
 .
 
 .
+
+<br><br><br><br><br>
 
 ---
 
-Frameworks
-==========
+Trouble Shooting
+================
 
 ---
 
-Running Spark on Alluxio
-------------------------
-
-### 1. Compatibility
-
--	Spark 1.1 이상
-
-### 2. Prerequisties
-
-#### 2.1. General Setup
-
--	[Local Mode](https://www.alluxio.org/docs/1.8/en/Running-Alluxio-Locally.html) 또는 [Cluster Mode](https://www.alluxio.org/docs/1.8/en/Running-Alluxio-on-a-Cluster.html)로 설정
--	Alluxio 다운로드
-
-	```shell
-	ex) wget으로 다운받기
-	wget http://downloads.alluxio.org/downloads/files/1.8.1/alluxio-1.8.1-hadoop-2.9-bin.tar.gz
-	```
-
--	advanced user는 `/<PATH_TO_ALLUXIO>/client/alluxio-1.8.1-client.jar`에 빌트되어있고 위치한 Alluxio client jar를 컴파일하기위한 선택을 할 수 있다.
-
-#### 2.2. Additional setup for HDFS
-
-### 3. Check Spark with Alluxio integration (Supports Spark 2.x)
-
-### 4. Use Alluxio as Input and Output
-
--	Using Data Already in Alluxio
--	Using Data from HDFS
--	Using Fault Tolerant Mode
-
-### 5. Data Locality
-
--	Running Spark on YARN
-
-### 6. `Class alluxio.hadoop.FileSystem not found` Issues with SparkSQL and Hive MetaStore
-
-### 7. `java.io.IOException: No FileSystem for scheme: alluxio` Issue with Spark on YARN
-
-.
-
-.
-
-.
-
-.
-
-rsync alluxio java jdk devel
-
-.
-
-.
-
-.
-
-.
-
-.
-
-.
-
-.
-
-<br><br><br><br>
-
----
-
-Quick Start
-===========
-
----
-
-### 1. Alluxio 다운로드
-
-www.alluxio.org/download<br> 본인이 원하는 alluxio 버전과 빌트인 hadoop 선택 후 다운로드<br> ![download-alluxio](./pictures/download-alluxio.png)
-
-```shell
-# 직접 다운로드
-wget http://alluxio.org/downloads/files/{{site.ALLUXIO_RELEASED_VERSION}}/alluxio-{{site.ALLUXIO_RELEASED_VERSION}}-bin.tar.gz
-
-# ex)
-http://downloads.alluxio.org/downloads/files/1.8.1/alluxio-1.8.1-hadoop-2.9-bin.tar.gz
-```
-
-### 2. Alluxio Config 수정
-
-기본 configuration 수정 (로컬 환경이므로 hostname을 localhost로 정의)
-
-```shell
-alluxio.master.hostname=localhost
-```
-
-### 3. Alluxio 환경 검증
-
-환경에 따라 선택 실행
-
-```shell
-# for local
-./bin/alluxio validateEnv local
-
-# for cluster
-./bin/alluxio validateEnv all   
-
-# 특정 validation만 실행
-./bin/alluxio validateEnv local ulimit
-```
-
-![local-validate-env](./pictures/local-validate-env.png)
-
-### 4. Alluxio 시작
-
-master와 worker를 시작 준비를 위해 journal, worker storage directory 포맷<br>
-
-```shell
-./bin/alluxio format
-```
-
-Alluxio 시작
-
-```shell
-./bin/alluxio-start.sh local SudoMount
-```
-
-### 5. Alluxio shell 사용하기
-
-\([command line 리스트](https://www.alluxio.org/docs/1.8/en/Command-Line-Interface.html) )
-
-```shell
-# Alluxio file system 기본 명령어
-./bin/alluxio fs [option]
-
-예제)
-# 로컬에 있는 LICENSE 파일을 alluxio로 복사
-./bin/alluxio fs copyFromLocal LICENSE /LICENSE
-
-# alluxio의 해당 디렉토리 파일 리스트업
-./bin/alluxio fs ls /
-
-# alluxio에 있는 파일을 Under Storage에 저장
-./bin/alluxio fs persist /LICENSE
-```
-
-예제 결과<br> alluxio fs에 있는 파일 LICENSE가 NOT_PERSIST에서 PERSIST로 변경된걸 확인 할 수 있다.<br> ![quick-shell-example](./pictures/quick-shell-example.png)
-
-<br><br><br><br>
-
----
-
-Alluxio on Local Machine
-========================
-
----
-
-### 1. Requirement
-
--	Java (JDK 8 이상)
--	conf/alluxio-site.properties (from conf/alluxio-site.properties.template)
--	conf/alluxio-site.properties 수정`shell
-	alluxio.master.hostname=localhost
-	alluxio.underfs.address=[desired_directory]
-	`
--	passwordless ~/.ssh/authorized_keys ([링크](http://www.linuxproblem.org/art_9.html)\)
-
-### 2. Alluxio Filesystem 포맷
-
--	처음 Alluxio를 실행했을때만 필요 (존재한 Alluxio 클러스터가 있을때 실행하면 Alluxio filesystem에 있는 이전에 저장된 모든 data와 metadata가 지워진다. (Not under storage)
-
-```shell
-./bin/alluxio format
-```
-
-### 3. Local Alluxio Filesystem 시작
-
-```shell
-# root 또는 local 다음에 SudoMount 붙여서 실행해야함
-./bin/alluxio-start.sh local
-```
-
-\*\** 상위 command는 RAMFS설정을 위한 sudo 권한을 얻기 위해 input password가 필요, Alluxio filesystem은 in-memory data storage로써 [RAMFS](https://www.kernel.org/doc/Documentation/filesystems/ramfs-rootfs-initramfs.txt)을 사용한다.
-
-### 4. Alluxio running 확인 및 정지
-
-http://localhost:19999 접속해서 확인 or logs dir확인
-
-```shell
-# 테스트
-./bin/alluxio runTests
-# 정지
-./bin/alluxio-stop.sh local
-```
-
-### 5. sudo 권한 실행
-
--	Linux에선 Alluxio를 시작하기 위해/mount를 실행하기위해 sudo권한이 필요, RAMFS을 in-memory data storage로 사용한다.<br> (추가자료: [ramdisk vs. ramfs vs. tmpfs](http://hoyoung2.blogspot.com/2012/02/ramdisk-ramfs-tmpfs.html)\)
-
--	만약 sudo 권한이 없으면, 이미 system admin으로부터 마운트된 그리고 읽기/쓰기가 가능한 user가 접근가능한 RAMFS가 필요하다. alluxio-site.properties에서 다음 conf 수정
-
-```shell
-alluxio.worker.tieredstore.level0.alias=MEM
-alluxio.worker.tieredstore.level0.dirs.path=/path/to/ramdisk
-
-# data storage로써 위의 directory를 사용하기 위해 "NoMount" option과 함께 Alluxio 시작
-./bin/alluxio-start.sh local NoMount
-```
-
-<br><br><br><br>
-
----
-
-Alluxio on Cluster
-==================
-
----
-
-1.	master로 사용할 노드의 con/falluxio-site.properties 변경
-
-	```shell
-	alluxio.master.hostname=[master_node_address]
-	```
-
-2.	conf/workers에 모든 worker노드의 ip address 또는 hostname 추가
-
-	```shell
-	# worker들의 conf 경로에 복사하기
-	    ./bin/alluxio copyDir <dirname>  
-	```
-
-3.	노드 간 통신 위해 passwordless 설정 [(링크)](http://www.linuxproblem.org/art_9.html)
-
-4.	alluxio 준비 / 시작
-
-	```shell
-	./bin/alluxio format
-	./bin/allxuio-start.sh <옵션1> <옵션2>
-	```
-
-	![alluxio-cluster-start](./pictures/alluxio-cluster-start.png)
-
----
-
-Alluxio on Docker
-=================
-
----
-
-<br><br><br><br>
-
----
-
-Check Error
-===========
-
----
-
-### Inconsistent Files on Startup
+Inconsistent Files on Startup
+-----------------------------
 
 ```shell
 # List each inconsistent file or directory
@@ -1008,6 +1239,37 @@ Check Error
 ./bin/alluxio fs checkConsistency -r /
 ```
 
-### worker의 사이즈는 동일한 것을 추천
+<br><br>
 
--	동일하지 않을시, checker에 의해 WARM 표시됨
+worker의 사이즈는 동일한 것을 추천
+----------------------------------
+
+-	동일하지 않을시, UI checker에 의해 WARM 표시됨
+
+<br><br>
+
+spark예제 실행 시, warning 메세지에 대해
+----------------------------------------
+
+-	spark를 alluxio에서 구동 시[(링크)](https://www.alluxio.org/docs/1.8/en/compute/Spark.html#examples-use-alluxio-as-input-and-output), 다음과 같은 warning메세지 나옴
+
+	```
+	2018-10-30 19:44:39 WARN  AbstractFileSystem:260 - delete failed: Path "/Output/.spark-staging-5" does not exist.
+	```
+
+-	**Solution** 아직 미해결
+
+<br><br>
+
+Web UI: worker ui에서 master UI 이동 시, 에러
+---------------------------------------------
+
+-	Alluxio를 local로 사용 시, alluxio-site.properties의 alluxio.master.hostname의 값에 `localhost` 넣으면 다음과 같은 에러 발생
+
+-	worker UI에서 *Return to Master* 클릭시, ![webui_worker_to_master1](./pictures/webui_worker_to_master1.png)
+
+-	주소에 *localhost* 가 입력되서 master로 돌아갈 수 없다. ![webui_worker_to_master2](./pictures/webui_worker_to_master2.png)
+
+-	**solution**
+
+	-	localhost 대신 직접 ip주소 또는 hostname입력
