@@ -523,17 +523,18 @@ Running Spark on Alluxio
 
 ### 2. Prerequisties
 
--	java 8 update 60 or higher, 64bit - alluxio-site.properties의 예를들어`alluxio.underfs.address= hdfs://<address>/alluxio` 이런식으로 설정 필요 - alluxio client jar 확인 (/<alluxio_path>/client/alluxio-1.8.1-client.jar)
+-	java 8 update 60 or higher, 64bit - alluxio-site.properties의 예를들어`alluxio.underfs.address= hdfs://<address>/alluxio` 이런식으로 설정 필요
+-	alluxio client jar 확인 ( /<alluxio_path>/client/alluxio-1.8.1-client.jar )
 
 ### 3. Basic Setup
 
 -	spark driver가 있거나 executor가 작동하는 모든 노드에 client jar를 보냄, 모든 노드에 local path와 같게 client jar를 넣는다.  
 -	spark/conf/spark-defaults.conf에 다음을 추가
 
-`shell
-    spark.driver.extraClassPath /<PATH_TO_ALLUXIO>/client/alluxio-1.8.1-client.jar
-    spark.executor.extraClassPath /<PATH_TO_ALLUXIO>/client/alluxio-1.8.1-client.jar
-`
+```shell
+spark.driver.extraClassPath /<PATH_TO_ALLUXIO>/client/alluxio-1.8.1-client.jar
+spark.executor.extraClassPath /<PATH_TO_ALLUXIO>/client/alluxio-1.8.1-client.jar
+```
 
 ### 4. Example: Use alluxio as Input and Output
 
@@ -560,23 +561,25 @@ bin/alluxio fs copyFromLocal LICENSE /Input
 
 -	under storage로부터 데이터 가져오기 - 임의의 Input_HDFS파일을 HDFS넣기 (파일이 alluxio에는 없고, HDFS에 있는 환경 만들기)
 
-`shell
-    hdfs dfs -put LICENSE /alluxio/data/Input_HDFS
-`
+```shell
+hdfs dfs -put LICENSE /alluxio/data/Input_HDFS
+```
 
 -	현재 alluxio에는 Input_HDFS파일이 적재되어 있진 않지만, under storage에는 persist되어있다. ![data-from-understorage1](./pictures/data-from-understorage1.png)
 
 -	spark-shell에서 다음을 실행
 
-`scala
-    > val s = sc.textFile("alluxio://<alluxio_master_address>:19998/Input_HDFS")
-    > val double = s.map(line => line + line)
-    > double.saveAsTextFile("alluxio://<alluxio_master_address>:19998/Output_HDFS")
-`
+```shell
+> val s = sc.textFile("alluxio://<alluxio_master_address>:19998/Input_HDFS")
+> val double = s.map(line => line + line)
+> double.saveAsTextFile("alluxio://<alluxio_master_address>:19998/Output_HDFS")
+```
 
 -	alluxio에 Output_HDFS 경로 생기고, Input_HDFS파일 내용의 두개파일이 포함된다.
 
--	Input_HDFS파일은 In-Alluxio에 적재된걸 확인 할 수 있다. ![data-from-understorage2](./pictures/data-from-understorage2.png)
+-	Input_HDFS파일은 In-Alluxio에 적재된걸 확인 할 수 있다.
+
+![data-from-understorage2](./pictures/data-from-understorage2.png)
 
 <br><br><br><br><br>
 
