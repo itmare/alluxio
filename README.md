@@ -1,5 +1,17 @@
 Alluxio 정리 중
 
+Alluxio란?
+----------
+
+### **==Memory-speed== ==Virtual== ==Distributed== ==Storage==**
+
+-	**Memory-speed**: memory-speed access to data
+-	**Virtual**: virtualized across different storage types under a unified namespace
+-	**Distributed**: scale out architecture
+-	**Storage**: file system API Software Only
+
+<br><br><br><br><br>
+
 ---
 
 Architecture
@@ -523,7 +535,8 @@ Running Spark on Alluxio
 
 ### 2. Prerequisties
 
--	java 8 update 60 or higher, 64bit - alluxio-site.properties의 예를들어`alluxio.underfs.address= hdfs://<address>/alluxio` 이런식으로 설정 필요
+-	java 8 update 60 or higher, 64bit
+-	alluxio-site.properties의 `alluxio.underfs.address= hdfs://<address>/alluxio` 이런식으로 설정 필요
 -	alluxio client jar 확인 ( /<alluxio_path>/client/alluxio-1.8.1-client.jar )
 
 ### 3. Basic Setup
@@ -1276,3 +1289,17 @@ Web UI: worker ui에서 master UI 이동 시, 에러
 -	**solution**
 
 	-	localhost 대신 직접 ip주소 또는 hostname입력
+
+<br><br>
+
+Web UI: HTTP ERROR 500
+----------------------
+
+![error-jdk-devel](./pictures/error-jdk-devel.png)
+
+-	`yum install java` 를 통해 설치된 자바는 jre가 설치됨
+-	web UI 접속시, 위와 같은 에러 발생 (web접속 불가)
+
+-	**solution**
+
+	-	`yum install java-1.8.0-openjdk-devel` 를 통해 JDK 설치
