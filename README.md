@@ -3,12 +3,12 @@ Alluxio 정리 중
 Alluxio란?
 ----------
 
-**==Memory-speed== ==Virtual== ==Distributed== ==Storage==**
+**`Memory-speed` `Virtual` `Distributed` `Storage`**
 
--	**Memory-speed**: memory-speed access to data
--	**Virtual**: virtualized across different storage types under a unified namespace
--	**Distributed**: scale out architecture
--	**Storage**: file system API Software Only
+-	**`Memory-speed`**: memory-speed access to data
+-	**`Virtual`**: virtualized across different storage types under a unified namespace
+-	**`Distributed`**: scale out architecture
+-	**`Storage`**: file system API Software Only
 
 <br><br><br><br><br>
 
