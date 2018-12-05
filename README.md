@@ -3,7 +3,7 @@ Alluxio 정리 중
 Alluxio란?
 ----------
 
-### **==Memory-speed== ==Virtual== ==Distributed== ==Storage==**
+**==Memory-speed== ==Virtual== ==Distributed== ==Storage==**
 
 -	**Memory-speed**: memory-speed access to data
 -	**Virtual**: virtualized across different storage types under a unified namespace
