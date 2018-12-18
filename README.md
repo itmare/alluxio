@@ -124,6 +124,8 @@ Data Flow in Alluxio
 
 기본적인 Alluxio의 동작에 대한 설명 (read, write)
 
+<br><br>
+
 Data Read
 ---------
 
@@ -164,6 +166,8 @@ Alluxio는 under storage와 computation framework사이에서 data reads를 위�
 
 ![dataflow-cache-miss](./pictures/dataflow-cache-miss.gif)
 
+<br><br>
+
 Data Write
 ----------
 
@@ -198,6 +202,8 @@ Alluxio API 또는 client에 있는 property 설정([alluxio.user.file.writetype
 	2.	모든 block은 같은 worker에 반드시 머물러야 한다.
 
 ![dataflow-async-through](./pictures/dataflow-async-through.gif)
+
+<br><br>
 
 Caching
 -------
@@ -466,7 +472,7 @@ Alluxio with HDFS
 
 ### 2. Configuring Alluxio
 
--	Basic Configuration
+#### 2.1 Basic Configuration
 
 ```shell
 alluxio.underfs.address=hdfs://<NAMENODE>:<PORT>
@@ -474,13 +480,17 @@ ex) alluxio가 설치된 곳에 hdfs namenode를 셋팅할때,
 alluxio.underfs.address=hdfs://localhost:9000
 ```
 
--	HDFS namenode HA mode - 적절한 config파일과 함께 HDFS에 접근 하기 위해 Alluxio server config를 설정해야한다.
+#### 2.2 HDFS namenode HA mode
+
+-	적절한 config파일과 함께 HDFS에 접근 하기 위해 Alluxio server config를 설정해야한다.
 
 ```shell
 alluxio.underfs.hdfs.configuration=/path/to/hdfs/conf/core-site.xml:/path/to/hdfs/conf/hdfs-site.xml
 ```
 
--	User/Permission Mapping - user를 포함하는 file/directory의 permission 정보를 위해, group과 HDFS mode는 Alluxio와 일치해야 한다. (Alluxio의 foo유저가 만든 파일은 foo유저 owner로써 HDFS에 persist된다.)
+#### 2.3 User/Permission Mapping
+
+-	user를 포함하는 file/directory의 permission 정보를 위해, group과 HDFS mode는 Alluxio와 일치해야 한다. (Alluxio의 foo유저가 만든 파일은 foo유저 owner로써 HDFS에 persist된다.)
 -	Alluxio의 master와 worker process를 시작한 유저는 다음의 둘 중 하나가 필요
 
 	1.	[HDFS super user](http://hadoop.apache.org/docs/r2.7.2/hadoop-project-dist/hadoop-hdfs/HdfsPermissionsGuide.html#The_Super-User). 즉, Alluxio와 hdfs를 시작할때 사용한 유저명이 같아야함 (like hdfs)
@@ -542,7 +552,7 @@ Running Spark on Alluxio
 ### 3. Basic Setup
 
 -	spark driver가 있거나 executor가 작동하는 모든 노드에 client jar를 보냄, 모든 노드에 local path와 같게 client jar를 넣는다.  
--	spark/conf/spark-defaults.conf에 다음을 추가
+-	spark/conf/spark2-defaults.conf에 다음을 추가
 
 ```shell
 spark.driver.extraClassPath /<PATH_TO_ALLUXIO>/client/alluxio-1.8.1-client.jar
@@ -560,7 +570,7 @@ cd <alluxio_path>
 bin/alluxio fs copyFromLocal LICENSE /Input
 ```
 
--	spark-shell 실행하자, alluxio master 주소를 입력
+-	spark-shell 실행, alluxio master 주소를 입력
 
 ```scala
 > val s = sc.textFile("alluxio://<alluxio_master_addr>:19998/Input")
@@ -572,7 +582,8 @@ bin/alluxio fs copyFromLocal LICENSE /Input
 
 #### 4.2. Access Data in Under storage
 
--	under storage로부터 데이터 가져오기 - 임의의 Input_HDFS파일을 HDFS넣기 (파일이 alluxio에는 없고, HDFS에 있는 환경 만들기)
+-	under storage로부터 데이터 가져오기
+-	임의의 Input_HDFS파일을 HDFS넣기 (파일이 alluxio에는 없고, HDFS에 있는 환경 만들기)
 
 ```shell
 hdfs dfs -put LICENSE /alluxio/data/Input_HDFS
@@ -1044,28 +1055,35 @@ alluxio.worker.tieredstore.level1.watermark.low.ratio=0.7   # 두번째 tier에�
 Security
 --------
 
-##### 1. 인증(Authentication)
+### 1. 인증(Authentication)
 
 ```shell
 alluxio.security.authentication.type=SIMPLE # (by default)
+# option: SIMPLE, NOSASL, CUSTOM
 ```
 
-1.1 SIMPLE
+#### 1.1 SIMPLE
 
--	authentication 필요
+-	authentication을 지원한다. (enabled)
 -	alluxio client가 서비스에 접속하기 전에, client는 alluxio service에 리포트하기 위해 다음의 우선순위로 user information을 가져온다.
 	1.	만약에 alluxio.security.login.username가 client에 설정되어 있으면, 그 값은 client의 login user로써 사용된다.
 	2.	login user는 operating system에서 유추된다.
 -	client가 user information을 추출한 후에, client는 user information을 service에서 접속하기 위해 사용한다.
 -	client가 directory/file을 만든 후, 그 user information은 metadata에 추가되고, CLI과 UI에서 가져간다.
 
-1.2 NOSASL - authentication 필요없음 - alluxio service는 client의 user를 신경쓰지않고, user에 의해 만들어진 directory/file은 user information과 관련없게 된다.
+#### 1.2 NOSASL
 
-1.3 CUSTOM - authentication이 필요 - alluxio client는 user를 찾기 위한 alluxio.security.authentication.AuthenticationProvider가 적용된 class의 이름인 alluxio.security.authentication.custom.provider.class를 확인한다.
+-	authentication을 지원하지 않는다. (disabled)
+-	alluxio service는 client의 user를 신경쓰지않고, user에 의해 만들어진 directory/file은 user information과 관련없게 된다.
+
+#### 1.3 CUSTOM
+
+-	authentication이 필요
+-	alluxio client는 user를 찾기 위한 alluxio.security.authentication.AuthenticationProvider가 적용된 class의 이름인 alluxio.security.authentication.custom.provider.class를 확인한다.
 
 -	**CUSTOM mode는 아직 실험단계, 테스트용으로만 사용되야한다.**<br><br><br>
 
-##### 2. 권한(Authorization)
+### 2. 권한(Authorization)
 
 ```shell
 alluxio.security.authorization.permission.enabled=true # by default
@@ -1073,8 +1091,8 @@ alluxio.security.authorization.permission.enabled=true # by default
 
 -	Alluxio file system은 요청한 user와 POSIX permission model을 기반으로 user의 접근을 grant/deny한다.
 -	각각의 file과 directory는 다음과 관련있다.
-	1.	owner: file과 directory를 만드는 client process의 user
-	2.	group: user-groups-mapping service로부터 가져다주는 group ([참고](https://www.alluxio.org/docs/1.8/en/Security.html#user-group-mapping)\)
+	1.	owner: file과 directory를 만들기 위한 client process user
+	2.	group: user-groups-mapping service로부터 가져다주는 group ([참고:user group mapping](https://www.alluxio.org/docs/1.8/en/Security.html#user-group-mapping)\)
 	3.	permission:
 		-	owner permission: file owner access privileges
 		-	group permission: owning group access privileges
@@ -1083,12 +1101,12 @@ alluxio.security.authorization.permission.enabled=true # by default
 
 **\*\*\*owner는 super user로 부터만 변경될 수 있다.**<br>**\*\*\*group과 permission은 super user와 file owner로 부터만 변경될 수 있다.**<br><br><br>
 
-##### 3. Impersonation (다른 유저 역할하기)
+### 3. Impersonation (다른 유저 역할하기)
 
 -	한 alluxio 유저가 다른 특정 유저에게 서비스 일부 기능을 사용할 수 있는 access 권한을 부여한다
 -	Impersonation은 만약 alluxio client가 많은 다른 유저에게 alluxio에 대한 액세스를 제공하는 service의 일부분이라면 유용하다.
 
-###### 3.1 Master Configuration
+#### 3.1 Master Configuration
 
 -	특정user가 다른 유저의 대역을 하기 위해, alluxio master는 일부 config를 설정해야한다.
 -	\<USERNAME\>이 impersonate한다.
@@ -1120,7 +1138,7 @@ alluxio.security.authorization.permission.enabled=true # by default
 	*** 두 parameter는 같은 user에 대해 설정 되야 한다.
 	```
 
-###### 3.2 Client Configuration
+#### 3.2 Client Configuration
 
 -	master가 특정 user를 impersonate하면, client는 다른 user를 impersonate하도록 설정해야 한다.
 
@@ -1134,7 +1152,7 @@ alluxio.security.login.impersonation.username
 	2.	\_NONE\_: alluxio client impersonation이 사용 되지 않음
 	3.	\_HDFS\_USER\_: alluxio client는 HDFS client와 같은 user로써 imperosnate한다. (when using Hadoop compatible client)<br><br><br>
 
-##### 4. Auditing
+### 4. Auditing
 
 -	audit log: 단순히 시간, 사용자 그리고 객체에 대한 모든 접근 형태를 기록 매체에 저장해서 통계, 유지 보수 등에 사용한다.
 
@@ -1164,7 +1182,7 @@ alluxio.master.audit.logging.enabled=true
 Tiered Locality
 ---------------
 
-#### 1. Tiered Identity
+### 1. Tiered Identity
 
 -	각각의 entity(master, worker, client)는 tiered identity를 가진다.
 -	**Tiered Identity**: address tuple (node=..., rack=...)
@@ -1173,7 +1191,7 @@ Tiered Locality
 -	Alluxio는 locality를 최적화시키기 위해 tiered identity를 사용한다.
 -	ex) client가 UFS로 부터 파일을 읽으려 할때, client는 같은 node에 있는 alluxio worker를 통해 읽으려 한다. 만약에 first tier(node)에 local worker가 없으면, rack-local data transfer를 위해, 다음 tier(rack)를 확인한다. 만약 worker와 client가 둘다에 없으면, 임의 worker가 선택된다.
 
-#### 2. Configuration
+### 2. Configuration
 
 -	만약 user가 tiered identity 정보를 제공하지 않으면, 각 entity는 node-level identity 정보를 설정하기 위해 localhost 검색을 수행한다.
 -	만약 다른 locality tier들이 설정되지 않은 채로 있다면, 그 tier들은 locality 결정을 알리는데 사용되 지 않는다.
@@ -1197,13 +1215,13 @@ Tiered Locality
 	3.	worker에 alluxio.worker.hostname, master에 alluxio.master.hostname 또는 client에 alluxio.user.hostname 설정
 	4.	아무것도 위와같이 설정되지 않으면, node locality는 localhost를 검색해서 결정
 
-#### 3. 언제 tiered locality를 사용하나?
+### 3. 언제 tiered locality를 사용하나?
 
 -	UFS 읽기 중에 read worker를 선택할 때
 -	여러 alluxio worker가 블록을 잡고 있는 상황에 read worker를 선택할 때
 -	만약 LocalFirstPolicy나 LocalFirstAvoidEvictionPolicy를 사용 하면, tiered locality는 alluxio에 data를 쓸때, write worker를 선택하기 위해 사용된다.
 
-#### 4. Custom locality tiers
+### 4. Custom locality tiers
 
 -	기본적으로 alluxio는 node와 rack, 두가지 locality tier를 가지만 커스텀 가능
 -	커스텀하기위해, alluxio.locality.order를 설정
@@ -1303,3 +1321,8 @@ Web UI: HTTP ERROR 500
 -	**solution**
 
 	-	`yum install java-1.8.0-openjdk-devel` 를 통해 JDK 설치
+
+<br><br><br>
+
+org.apache.hadoop.fs.UnsupportedFileSystemException: No FileSystem for scheme "alluxio"
+---------------------------------------------------------------------------------------
