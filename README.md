@@ -159,7 +159,7 @@ Alluxio는 under storage와 computation framework사이에서 data reads를 위�
 
 ### Cache Miss
 
--	Alluxio내에서 data호출이 불가능 할때.
+-	**Alluxio내에서 data호출이 불가능 할때.**
 -	client는 읽기 작업을 local worker에게 넘기고 그 worker는 under storage에서 데이터를 읽는다.
 -	worker는 차후 read 작업을 위해, data를 local 메모리에 저장하고 관련 정보를 client에 전달한다.
 -	주로 data를 처음 읽을 때 cache miss가 발생한다.
@@ -364,8 +364,8 @@ Alluxio 시작
 
 ---
 
-Alluxio on Local Machine
-========================
+Deploy Alluxio Locally
+======================
 
 ---
 
@@ -1217,8 +1217,8 @@ Tiered Locality
 
 ### 3. 언제 tiered locality를 사용하나?
 
--	UFS 읽기 중에 read worker를 선택할 때
--	여러 alluxio worker가 블록을 잡고 있는 상황에 read worker를 선택할 때
+-	client가 UFS가 읽기 중에 read worker를 선택할 때
+-	client가 여러 alluxio worker들이 block을 잡고 있는 상황에서, read worker를 선택할 때
 -	만약 LocalFirstPolicy나 LocalFirstAvoidEvictionPolicy를 사용 하면, tiered locality는 alluxio에 data를 쓸때, write worker를 선택하기 위해 사용된다.
 
 ### 4. Custom locality tiers
@@ -1234,6 +1234,56 @@ alluxio.locality.order=node,rack,availability_zone
 
 -	**반드시** 모든 entity에 대해 설정되어야 한다. (master, worker, client)
 -	각 entity에 availability zone을 설정할때, alluxio.locality.availability\_zone 설정하거나, output에 availability\_zone\=...을 포함하는 locality script 사용해야 한다.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
+
+.
 
 .
 
